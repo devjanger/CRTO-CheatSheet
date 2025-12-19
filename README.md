@@ -1,6 +1,9 @@
 # CRTO CheatSheet
 
-
+<p align="center">
+<img width="300" height="300" alt="crto-review-01" src="https://github.com/user-attachments/assets/276f2305-1e5b-4802-b346-bebfb436c820" />
+<p>
+  
 - [Persistence](#persistence)
   - [Boot & Logon Autostart Execution](#boot--logon-autostart-execution)
   - [Logon Script](#logon-script)
